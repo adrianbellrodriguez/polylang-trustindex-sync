@@ -4,7 +4,7 @@
  *
  * All Trustindex "Widgets for X Reviews" plugins share the same architecture:
  *
- *   • Active plugin path: review-widgets-for-{platform}/review-widgets-for-{platform}.php
+ *   • Active plugin path: {folder}/{folder}.php
  *   • DB option:          trustindex-{platform}-lang
  *   • Shortcode:          trustindex-widget-{platform}
  *   • Cache option:       trustindex-{platform}-review-content
@@ -25,39 +25,38 @@ class PTA_Language_Sync {
     /**
      * Maps WordPress plugin folder names → Trustindex internal platform slug.
      *
-     * The plugin folder name is what appears in the active_plugins option.
-     * The platform slug is the first argument passed to new TrustindexPlugin_{slug}()
-     * inside each plugin's main file, and is used to build option names:
-     *   trustindex-{slug}-lang
-     *   trustindex-{slug}-review-content
+     * Folder names extracted from the official WordPress.org plugin URLs.
+     * Slugs verified against the TrustindexPlugin_{slug} class instantiation
+     * in each plugin's main file.
      *
      * @var array<string,string>  folder => slug
      */
     private static $plugin_map = [
-        // Review platforms (official list)
-        'review-widgets-for-airbnb'      => 'airbnb',
-        'review-widgets-for-aliexpress'  => 'aliexpress',
-        'review-widgets-for-alibaba'     => 'alibaba',
-        'review-widgets-for-amazon'      => 'amazon',
-        'review-widgets-for-bookatable'  => 'bookatable',
-        'review-widgets-for-booking'     => 'booking',
-        'review-widgets-for-capterra'    => 'capterra',
-        'review-widgets-for-expedia'     => 'expedia',
-        'review-widgets-for-facebook'    => 'facebook',
-        'review-widgets-for-foursquare'  => 'foursquare',
-        'review-widgets-for-google'      => 'google',
-        'review-widgets-for-hotels'      => 'hotels',
-        'review-widgets-for-opentable'   => 'opentable',
-        'review-widgets-for-thumbtack'   => 'thumbtack',
-        'review-widgets-for-tripadvisor' => 'tripadvisor',
-        'review-widgets-for-yelp'        => 'yelp',
-        'review-widgets-for-zillow'      => 'zillow',
-        'review-widgets-for-wordpress'   => 'wordpress',
-        // Other Trustindex products with different folder patterns
-        'wp-tripadvisor-review-widgets'               => 'tripadvisor',
-        'customer-reviews-collector-for-woocommerce'  => 'woocommerce',
-        'customer-reviews-for-woocommerce'            => 'woocommerce',
-        'wp-testimonials'                             => 'testimonials',
+        // ── Review platforms ──────────────────────────────────────────────────
+        'review-widgets-for-airbnb'                        => 'airbnb',
+        'widgets-for-aliexpress-reviews'                   => 'aliexpress',
+        'widgets-for-alibaba-reviews'                      => 'alibaba',
+        'review-widgets-for-amazon'                        => 'amazon',
+        'review-widgets-for-booking-com'                   => 'booking',
+        'review-widgets-for-capterra'                      => 'capterra',
+        'widgets-for-ebay-reviews'                         => 'ebay',
+        'review-widgets-for-expedia'                       => 'expedia',
+        'free-facebook-reviews-and-recommendations-widgets'=> 'facebook',
+        'review-widgets-for-foursquare'                    => 'foursquare',
+        'wp-reviews-plugin-for-google'                     => 'google',
+        'review-widgets-for-hotels-com'                    => 'hotels',
+        'reviews-widgets-for-opentable'                    => 'opentable',
+        'widgets-for-sourceforge-reviews'                  => 'sourceforge',
+        'widgets-for-thumbtack-reviews'                    => 'thumbtack',
+        'review-widgets-for-tripadvisor'                   => 'tripadvisor',
+        'reviews-widgets-for-yelp'                         => 'yelp',
+        'widgets-for-zillow-reviews'                       => 'zillow',
+        'reviews-widgets'                                  => 'wordpress',
+        // ── WooCommerce ───────────────────────────────────────────────────────
+        'customer-reviews-for-woocommerce'                 => 'woocommerce',
+        'customer-reviews-collector-for-woocommerce'       => 'woocommerce',
+        // ── Alternative Tripadvisor plugin ────────────────────────────────────
+        'wp-tripadvisor-review-widgets'                    => 'tripadvisor',
     ];
 
     /**
@@ -79,7 +78,7 @@ class PTA_Language_Sync {
         $this->active_platforms = $this->detect_active_platforms();
 
         if ( empty( $this->active_platforms ) ) {
-            return; // No Trustindex plugin active — nothing to do.
+            return;
         }
 
         // 1. Filter every active platform's DB lang option.
@@ -103,31 +102,30 @@ class PTA_Language_Sync {
 
     /**
      * Scans the WordPress active plugins list against the known plugin map
-     * and returns the list of Trustindex platform slugs currently active.
+     * and returns the Trustindex platform slugs currently active.
      *
-     * @return string[]  E.g. ['airbnb', 'google', 'booking']
+     * Falls back to checking DB option names if folder scanning finds nothing.
+     *
+     * @return string[]
      */
     private function detect_active_platforms(): array {
         $found = [];
 
         $active_plugins = (array) get_option( 'active_plugins', [] );
 
-        // Include network-activated plugins on multisite installs.
         if ( is_multisite() ) {
-            $network = array_keys( (array) get_site_option( 'active_sitewide_plugins', [] ) );
+            $network        = array_keys( (array) get_site_option( 'active_sitewide_plugins', [] ) );
             $active_plugins = array_merge( $active_plugins, $network );
         }
 
         foreach ( $active_plugins as $plugin_path ) {
-            // Extract the folder name (everything before the first slash).
             $folder = strtok( $plugin_path, '/' );
-
             if ( isset( self::$plugin_map[ $folder ] ) ) {
                 $found[] = self::$plugin_map[ $folder ];
             }
         }
 
-        // Fallback: check for DB options in case folder names changed.
+        // Fallback: check DB options in case folder names differ.
         if ( empty( $found ) ) {
             foreach ( array_unique( array_values( self::$plugin_map ) ) as $slug ) {
                 if ( false !== get_option( "trustindex-{$slug}-lang", false ) ) {
@@ -147,8 +145,6 @@ class PTA_Language_Sync {
      * Returns the Polylang language code instead of the DB value so that
      * Trustindex's PHP render uses the visitor's current language.
      *
-     * Hooked to: option_trustindex-{platform}-lang
-     *
      * @param  mixed $saved_lang
      * @return mixed
      */
@@ -156,9 +152,7 @@ class PTA_Language_Sync {
         if ( is_admin() ) {
             return $saved_lang;
         }
-
         $lang = $this->get_polylang_language();
-
         return ! empty( $lang ) ? $lang : $saved_lang;
     }
 
@@ -170,8 +164,6 @@ class PTA_Language_Sync {
      * Processes the HTML output of any Trustindex shortcode:
      *   a) Removes data-no-translation="true" so the JS loader re-translates texts.
      *   b) Injects / updates data-language="XX" on the loader <div>.
-     *
-     * Hooked to: do_shortcode_tag
      *
      * @param  string $output
      * @param  string $tag
@@ -194,10 +186,8 @@ class PTA_Language_Sync {
             return $output;
         }
 
-        // a) Remove data-no-translation so the JS loader translates everything.
         $output = preg_replace( '/\s*data-no-translation=["\']true["\']/i', '', $output );
 
-        // b) Inject or update data-language on the loader div.
         $output = preg_replace_callback(
             '/(<div\b[^>]*data-src="https:\/\/cdn\.trustindex\.io\/[^"]*"[^>]*)(>)/i',
             function ( array $matches ) use ( $lang ): string {
@@ -222,9 +212,7 @@ class PTA_Language_Sync {
 
     /**
      * Deletes the cached widget HTML template for every active platform whenever
-     * the Polylang language changes, so Trustindex regenerates it in the new language.
-     *
-     * Hooked to: init
+     * the Polylang language changes, forcing Trustindex to regenerate it.
      */
     public function maybe_flush_template_cache(): void {
         if ( is_admin() || ! function_exists( 'pll_current_language' ) ) {
@@ -254,7 +242,7 @@ class PTA_Language_Sync {
      * Returns the active Polylang language as a 2-letter ISO 639-1 code,
      * or null if Polylang is not available.
      *
-     * Custom slug → code mappings via the 'pta_language_map' filter:
+     * Custom slug mappings via the 'pta_language_map' filter:
      *
      *   add_filter( 'pta_language_map', function( $map ) {
      *       $map['valenciano'] = 'ca';

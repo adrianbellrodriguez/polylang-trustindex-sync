@@ -1,7 +1,3 @@
-# WordPress
-wp-config.php
-wp-content/uploads/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -11,6 +7,7 @@ Thumbs.db
 .vscode/
 *.swp
 
-# Build
-/vendor/
-/node_modules/
+# Keep vendor folder but ignore its contents from git
+# (PUC is installed locally, not committed)
+/vendor/plugin-update-checker/
+!/vendor/.gitkeep

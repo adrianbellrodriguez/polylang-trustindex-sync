@@ -1,0 +1,8 @@
+# polylang-trustindex-sync -- bg
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: bg\n"
+
+msgid "Automatically syncs the active Polylang language with any Trustindex Reviews widget (Airbnb, Google, Booking, Tripadvisor, Yelp and more), so that all widget texts are always displayed in the language the visitor is browsing in — no manual configuration needed."
+msgstr "Автоматично синхронизира активния език на Polylang с всеки уиджет за отзиви на Trustindex — без нужда от ръчна конфигурация."

@@ -1,0 +1,8 @@
+# polylang-trustindex-sync -- zh_CN
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: zh_CN\n"
+
+msgid "Automatically syncs the active Polylang language with any Trustindex Reviews widget (Airbnb, Google, Booking, Tripadvisor, Yelp and more), so that all widget texts are always displayed in the language the visitor is browsing in — no manual configuration needed."
+msgstr "自动将 Polylang 当前语言与任何 Trustindex 评论小部件同步，无需手动配置。"
